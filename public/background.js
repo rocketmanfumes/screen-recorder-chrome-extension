@@ -2,40 +2,47 @@
 /*global screen*/
 /*global navigator*/
 
-var recording = false;
 var recorder = null;
 
 class ScreenRecorder {
     constructor(mediaStream) {
-        this.chunks = [];
-        this.mediaStream = mediaStream;
-        this.mediaRecorder = new MediaRecorder(mediaStream);
-        this.mediaRecorder.ondataavailable = this.ondataavailable.bind(this);
-        this.mediaRecorder.onstop = this.onstop.bind(this);
-        this.mediaRecorder.onerror = this.onerror.bind(this);
+        this._chunks = [];
+        this._recording = false;
+        this._mediaStream = mediaStream;
+        this._mediaRecorder = new MediaRecorder(mediaStream);
+        this._mediaRecorder.ondataavailable = (e) => this.ondataavailable(e);
+        this._mediaRecorder.onstop = (e) => this.onstop(e);
+        this._mediaRecorder.onerror = (e) => this.onerror(e);
     }
 
     start() {
-        this.mediaRecorder.start();
+        this._mediaRecorder.start();
+        this._recording = true;
     }
 
     stop() {
-        this.mediaRecorder.stop();
-        this.mediaStream.getTracks().forEach(function(track) {
+        this._mediaRecorder.stop();
+        this._mediaStream.getTracks().forEach(function(track) {
             track.stop();
         });
+        this._recording = false;
+    }
+
+    get recording() {
+        return this._recording;
     }
 
     ondataavailable(e) {
-        this.chunks.push(e.data);
+        this._chunks.push(e.data);
     }
 
-    onerror(event) {
-        console.error("Media recorder error", event.error);
+    onerror(e) {
+        console.error("Media recorder error", e.error);
+        this._recording = false;
     }
 
     onstop(e) {
-        let blob = new Blob(this.chunks, { 'type' : 'video/x-matroska;codecs=avc1' });
+        let blob = new Blob(this._chunks, { 'type' : 'video/x-matroska;codecs=avc1' });
         let blobUrl = window.URL.createObjectURL(blob);
         var a = document.createElement("a");
         a.href = blobUrl;
@@ -52,6 +59,10 @@ chrome.runtime.onInstalled.addListener(function() {
         } else if (message.action == "stopCapture") {
             stopCapture(sendResponse);
         } else if (message.action == "getState") {
+            let recording = false;
+            if (recorder !== null) {
+                recording = recorder.recording;
+            }
             sendResponse({success: true, recording: recording});
         }
         // return true: Callback will be async, won't be invalidated when this function returns
@@ -73,7 +84,6 @@ function captureScreen(callback) {
     promise.then((mediaStream) => {
         recorder = new ScreenRecorder(mediaStream);
         recorder.start();
-        recording = true;
         callback({success: true});
     }).catch((error) => {
         console.error("Failed to create stream: ", error.message);
@@ -83,6 +93,5 @@ function captureScreen(callback) {
 
 function stopCapture(callback) {
     recorder.stop();
-    recording = false;
     callback({success: true});
 }
