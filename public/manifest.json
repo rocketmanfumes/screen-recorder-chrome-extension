@@ -1,0 +1,25 @@
+{
+  "manifest_version": 2,
+
+  "name": "Screen Recorder",
+  "description": "Simple screen recorder",
+  "version": "0.0.1",
+
+ "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+
+ "icons": {
+    "128": "logo-128.png"
+  },
+
+  "browser_action": {
+    "default_title": "Screen Recorder",
+    "default_popup": "index.html"
+  },
+
+  "permissions": ["desktopCapture"],
+
+  "content_security_policy": "script-src 'self' 'sha256-tIxSjAMWN8dsWZtDDDBLuesRzKft6umcxqAlFpIKbRc='; object-src 'self'"
+}
