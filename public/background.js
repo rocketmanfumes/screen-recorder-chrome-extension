@@ -77,7 +77,9 @@ function captureScreen(callback) {
         callback({success : true});
       })
       .catch((error) => {
-        console.error("Failed to create stream: ", error.message);
+        // Just warn here, since this happens when a user denies
+        // permission to the extension
+        console.warn("Failed to create stream: ", error.message);
         callback({success : false});
       });
 }
